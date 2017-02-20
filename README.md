@@ -65,3 +65,6 @@ At that point `P.Promise.then(f)` would... finally pay off a little.
 I've yet to add typings though...
 
 Until then, maybe this pays off a bit better using say `let { then } = P.Promise;` then `then(f)`.
+
+## Todo:
+- alias constructor as `new`?

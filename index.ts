@@ -12,7 +12,7 @@ const safeAccess = <V, T extends { [k: string]: V }>(obj: T) => <K extends keyof
 }
 
 // addArities enum
-export const [DYNAMIC, FIXED_EXACT, FIXED_ANY, EVEN_OPTIONAL] = R.range(0, 10);
+export const [DYNAMIC, FIXED_EXACT, EVEN_OPTIONAL] = R.range(0, 10);
 // limitation of R._arity used in R.curry
 const maxArity = (isProto = false) => 10 - (isProto ? 1 : 0);
 
@@ -27,19 +27,17 @@ export const getArities = (isProto = false) => <T extends { [k: string]: Functio
 
 // add versions for different arities
 const withLower = (isProto = false, evenOptional = false) => (n: number, k: string) => R.pipe(
-  R.inc,
-  R.range(0),
+  R.flip(R.range(1 + maxArity(isProto))),
   R.map((i: number) => [`${k}${ i + (isProto ? 1 : 0) }`, [i, k]]),
   R.concat([[k, [n, k]]]),
   R.fromPairs,
-)(evenOptional ? maxArity(isProto) : n);
+)(n);
 
 // instead of just e.g. `indexOf` (arity 3), also get lower arities, e.g. `indexOf`, `indexOf3`, `indexOf2`, `indexOf1`
 const getUsedArities = (isProto: boolean, addArities: number) =>
-    //addArities == FIXED_EXACT ? R.identity :
-    R.contains(addArities, [FIXED_ANY, EVEN_OPTIONAL]) ?
+    addArities == EVEN_OPTIONAL ?
         R.pipe(R.map(R.apply(withLower(isProto, addArities == EVEN_OPTIONAL))), R.values, R.mergeAll) :
-        R.identity; // e.g. addArities == FIXED_EXACT
+        R.identity;
 
 const dynamify = (isProto: boolean, addArities: number, fn: <T, F extends Function>(n: number, x: T) => F) => addArities == DYNAMIC ?
     R.pipe(R.nthArg(1), R.flip(fn), <F extends Function>(f: F) => (i: number) => f(i - (isProto ? 1 : 0))) :
