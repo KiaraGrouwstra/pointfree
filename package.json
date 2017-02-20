@@ -1,0 +1,29 @@
+{
+  "name": "pointfree",
+  "version": "0.0.1",
+  "description": "pointfree curried anything",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tycho01/pointfree.git"
+  },
+  "keywords": [
+    "curry"
+  ],
+  "author": "Tycho Grouwstra",
+  "license": "WTFPL-2.0",
+  "bugs": {
+    "url": "https://github.com/tycho01/pointfree/issues"
+  },
+  "homepage": "https://github.com/tycho01/pointfree#readme",
+  "dependencies": {
+    "ramda": "^0.23.0"
+  },
+  "devDependencies": {
+    "@types/ramda": "0.0.3",
+    "typescript": "^2.2.0"
+  }
+}
