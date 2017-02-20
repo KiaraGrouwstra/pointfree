@@ -68,3 +68,5 @@ Until then, maybe this pays off a bit better using say `let { then } = P.Promise
 
 ## Todo:
 - alias constructor as `new`?
+- resolve TS errors
+- ensure results are typed (haha, doesn't seem easy...)
