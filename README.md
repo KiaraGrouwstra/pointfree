@@ -70,3 +70,4 @@ Until then, maybe this pays off a bit better using say `let { then } = P.Promise
 - alias constructor as `new`?
 - resolve TS errors
 - ensure results are typed (haha, doesn't seem easy...)
+- add a run-time check on methods to ensure the parameter is what it should be, as otherwise you could now be using methods on values of the wrong type!
