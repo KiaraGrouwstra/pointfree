@@ -5,61 +5,42 @@ interface Type<T> extends Function {
 }
 
 // some functions error as soon as you access them...
-const safeAccess = <V, T extends { [k: string]: V }>(obj: T) => <K extends keyof T>(k: string): V|null => {
+const safeAccess = <V, T extends { [k: string]: V }>(obj: T) =>
+                   <K extends keyof T>(k: string): V | null => {
   try {
     return obj[k];
-  } catch(e) {}
+  } catch(e) {
+    return null;
+  }
 }
 
-// addArities enum
-export const [DYNAMIC, FIXED_EXACT, EVEN_OPTIONAL] = R.range(0, 10);
-// limitation of R._arity used in R.curry
-const maxArity = (isProto = false) => 10 - (isProto ? 1 : 0);
-
-// get arities of a class / prototype
-export const getArities = (isProto = false) => <T extends { [k: string]: Function }>(obj: T) => R.pipe(
+// get functions of a class / prototype
+// { [k: string]: Function }
+export const getFunctions = <T extends {}>(obj: T): {} => R.pipe(
   Object.getOwnPropertyNames,
+  R.map((k: string) => [k, k]),
+  R.fromPairs,
   R.map(safeAccess(obj)),
   R.filter(R.is(Function)),
-  R.map(<F extends Function>(f: F) => [f.name, [R.clamp(0, maxArity(isProto), f.length), f.name]]),
-  R.fromPairs,
 )(obj);
 
-// add versions for different arities
-const withLower = (isProto = false, evenOptional = false) => (n: number, k: string) => R.pipe(
-  R.flip(R.range(1 + maxArity(isProto))),
-  R.map((i: number) => [`${k}${ i + (isProto ? 1 : 0) }`, [i, k]]),
-  R.concat([[k, [n, k]]]),
-  R.fromPairs,
-)(n);
-
-// instead of just e.g. `indexOf` (arity 3), also get lower arities, e.g. `indexOf`, `indexOf3`, `indexOf2`, `indexOf1`
-const getUsedArities = (isProto: boolean, addArities: number) =>
-    addArities == EVEN_OPTIONAL ?
-        R.pipe(R.map(R.apply(withLower(isProto, addArities == EVEN_OPTIONAL))), R.values, R.mergeAll) :
-        R.identity;
-
-const dynamify = (isProto: boolean, addArities: number, fn: <T, F extends Function>(n: number, x: T) => F) => addArities == DYNAMIC ?
-    R.pipe(R.nthArg(1), R.flip(fn), <F extends Function>(f: F) => (i: number) => f(i - (isProto ? 1 : 0))) :
-    fn;
-
-export const curryStatic = <T>(cls: Type<T>, addArities = EVEN_OPTIONAL) => R.pipe(
-  getArities(false),
-  getUsedArities(false, addArities),
-  R.map(R.adjust((k: keyof Type<T>) => cls[k], 1)),
-  R.map(R.apply(dynamify(false, addArities, R.curryN))),
+// curry functions
+export const curryStatic = <T>(cls: Type<T>) => R.pipe(
+  getFunctions,
+  R.map((f: Function) => (...rest: any[]) => (x: any) => f(x, ...rest)),
+        // ^ variadic R.partialRight, this allows further currying if desired
 )(cls);
 
-export const curryPrototype = <T>(cls: Type<T>, addArities = EVEN_OPTIONAL) => R.pipe(
-  getArities(true),
-  getUsedArities(true , addArities),
-  R.map(R.apply(dynamify(true, addArities, R.invoker))),
+// curry methods
+export const curryPrototype = <T>(cls: Type<T>) => R.pipe(
+  getFunctions,
+  R.map((f: Function) => (...rest: any[]) => (x: T) => f.apply(x, rest)),
 )(cls.prototype);
 
 // return curried functions -- subject last for prototype methods (all arities)
-const curryBoth = <T>(cls: Type<T>, addArities = EVEN_OPTIONAL) => R.merge(
-  curryPrototype(cls, addArities),
-  curryStatic(cls, addArities),
+const curryBoth = <T>(cls: Type<T>) => R.merge(
+  curryPrototype(cls),
+  curryStatic(cls),
 );
 
 export default curryBoth;

@@ -1,7 +1,7 @@
 {
   "name": "pointfree",
   "version": "0.0.1",
-  "description": "pointfree curried anything",
+  "description": "pointfree anything",
   "main": "index.js",
   "scripts": {
     "test": "node test.js"
@@ -20,10 +20,10 @@
   },
   "homepage": "https://github.com/tycho01/pointfree#readme",
   "dependencies": {
-    "ramda": "^0.23.0"
+    "ramda": "^0.25.0"
   },
   "devDependencies": {
-    "@types/ramda": "0.0.3",
-    "typescript": "^2.2.0"
+    "@types/ramda": "github:types/npm-ramda#dist",
+    "typescript": "^2.6.2"
   }
 }
