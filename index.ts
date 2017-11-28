@@ -14,27 +14,35 @@ const safeAccess = <V, T extends { [k: string]: V }>(obj: T) =>
   }
 }
 
+// map object, from Ramda without the `map` dispatch
+const mapObject = (fn: Function) =>
+                  (obj: { [k: string]: any }) =>
+  R.reduce((acc: { [k: string]: any }, key: string) => {
+    acc[key] = fn(obj[key]);
+    return acc;
+  }, {}, R.keys(obj));
+
 // get functions of a class / prototype
 // { [k: string]: Function }
 export const getFunctions = <T extends {}>(obj: T): {} => R.pipe(
   Object.getOwnPropertyNames,
   R.map((k: string) => [k, k]),
   R.fromPairs,
+  R.filter(R.pipe(safeAccess(obj), R.is(Function))),
   R.map(safeAccess(obj)),
-  R.filter(R.is(Function)),
 )(obj);
 
 // curry functions
 export const curryStatic = <T>(cls: Type<T>) => R.pipe(
   getFunctions,
-  R.map((f: Function) => (...rest: any[]) => (x: any) => f(x, ...rest)),
+  mapObject((f: Function) => (...rest: any[]) => (x: any) => f(x, ...rest)),
         // ^ variadic R.partialRight, this allows further currying if desired
 )(cls);
 
 // curry methods
 export const curryPrototype = <T>(cls: Type<T>) => R.pipe(
   getFunctions,
-  R.map((f: Function) => (...rest: any[]) => (x: T) => f.apply(x, rest)),
+  mapObject((f: Function) => (...rest: any[]) => (x: T) => f.apply(x, rest)),
 )(cls.prototype);
 
 // return curried functions -- subject last for prototype methods (all arities)

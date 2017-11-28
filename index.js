@@ -1,36 +1,27 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var R = require("ramda");
+const R = require("ramda");
 // some functions error as soon as you access them...
-var safeAccess = function (obj) {
-    return function (k) {
-        try {
-            return obj[k];
-        }
-        catch (e) {
-            return null;
-        }
-    };
+const safeAccess = (obj) => (k) => {
+    try {
+        return obj[k];
+    }
+    catch (e) {
+        return null;
+    }
 };
+// map object, from Ramda without the `map` dispatch
+const mapObject = (fn) => (obj) => R.reduce((acc, key) => {
+    acc[key] = fn(obj[key]);
+    return acc;
+}, {}, R.keys(obj));
 // get functions of a class / prototype
 // { [k: string]: Function }
-exports.getFunctions = function (obj) { return R.pipe(Object.getOwnPropertyNames, R.map(function (k) { return [k, k]; }), R.fromPairs, R.map(safeAccess(obj)), R.filter(R.is(Function)))(obj); };
+exports.getFunctions = (obj) => R.pipe(Object.getOwnPropertyNames, R.map((k) => [k, k]), R.fromPairs, R.filter(R.pipe(safeAccess(obj), R.is(Function))), R.map(safeAccess(obj)))(obj);
 // curry functions
-exports.curryStatic = function (cls) { return R.pipe(exports.getFunctions, R.map(function (f) { return function () {
-    var rest = [];
-    for (var _i = 0; _i < arguments.length; _i++) {
-        rest[_i] = arguments[_i];
-    }
-    return function (x) { return f.apply(void 0, [x].concat(rest)); };
-}; }))(cls); };
+exports.curryStatic = (cls) => R.pipe(exports.getFunctions, mapObject((f) => (...rest) => (x) => f(x, ...rest)))(cls);
 // curry methods
-exports.curryPrototype = function (cls) { return R.pipe(exports.getFunctions, R.map(function (f) { return function () {
-    var rest = [];
-    for (var _i = 0; _i < arguments.length; _i++) {
-        rest[_i] = arguments[_i];
-    }
-    return function (x) { return f.apply(x, rest); };
-}; }))(cls.prototype); };
+exports.curryPrototype = (cls) => R.pipe(exports.getFunctions, mapObject((f) => (...rest) => (x) => f.apply(x, rest)))(cls.prototype);
 // return curried functions -- subject last for prototype methods (all arities)
-var curryBoth = function (cls) { return R.merge(exports.curryPrototype(cls), exports.curryStatic(cls)); };
+const curryBoth = (cls) => R.merge(exports.curryPrototype(cls), exports.curryStatic(cls));
 exports.default = curryBoth;
