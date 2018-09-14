@@ -72,7 +72,7 @@ export const getArities = (isProto = false) => <T extends { [k: string]: Functio
 )(obj);
 
 // add versions for different arities
-const withLower = (isProto = false, evenOptional = false) => (n: number, k: string) => R.pipe(
+const withLower = (isProto = false) => (n: number, k: string) => R.pipe(
   R.flip(R.range)(1 + maxArity(isProto)),
   R.map((i: number) => [`${k}${ i + (isProto ? 1 : 0) }`, [i, k]]),
   R.concat([[k, [n, k]]]),
@@ -82,7 +82,7 @@ const withLower = (isProto = false, evenOptional = false) => (n: number, k: stri
 // instead of just e.g. `indexOf` (arity 3), also get lower arities, e.g. `indexOf`, `indexOf3`, `indexOf2`, `indexOf1`
 const getUsedArities = (isProto: boolean, addArities: number) =>
     addArities == EVEN_OPTIONAL ?
-        R.pipe(R.map(R.apply(withLower(isProto, addArities == EVEN_OPTIONAL))), R.values, R.mergeAll) :
+        R.pipe(R.map(R.apply(withLower(isProto))), R.values, R.mergeAll) :
         R.identity;
 
 const dynamify = (isProto: boolean, addArities: number, fn: <T, F extends Function>(n: number, x: T) => F) => addArities == DYNAMIC ?
@@ -93,6 +93,7 @@ export const curryStatic = <T>(cls: Type<T>, addArities = EVEN_OPTIONAL) => R.pi
   getArities(false),
   getUsedArities(false, addArities),
   R.map(R.pipe(
+    R.tap(console.log.bind(console)),
     R.adjust((k: keyof Type<T>) => (...args: any[]) => cls[k](R.last(args), ...R.dropLast(1, args)), 1),
     R.apply(dynamify(false, addArities, R.curryN)),
   )),

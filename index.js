@@ -33,18 +33,15 @@ const maxArity = (isProto = false) => 9 - (isProto ? 1 : 0);
 // get arities of a class / prototype
 exports.getArities = (isProto = false) => (obj) => R.pipe(Object.getOwnPropertyNames, R.filter(R.pipe(safeAccess(obj), R.is(Function))), R.map(R.pipe(safeAccess(obj), (f) => [f.name, [R.clamp(0, maxArity(isProto), f.length), f.name]])), R.fromPairs)(obj);
 // add versions for different arities
-const withLower = (isProto = false, evenOptional = false) => (n, k) => R.pipe(R.flip(R.range)(1 + maxArity(isProto)), R.map((i) => [`${k}${i + (isProto ? 1 : 0)}`, [i, k]]), R.concat([[k, [n, k]]]), R.fromPairs)(n);
+const withLower = (isProto = false) => (n, k) => R.pipe(R.flip(R.range)(1 + maxArity(isProto)), R.map((i) => [`${k}${i + (isProto ? 1 : 0)}`, [i, k]]), R.concat([[k, [n, k]]]), R.fromPairs)(n);
 // instead of just e.g. `indexOf` (arity 3), also get lower arities, e.g. `indexOf`, `indexOf3`, `indexOf2`, `indexOf1`
 const getUsedArities = (isProto, addArities) => addArities == exports.EVEN_OPTIONAL ?
-    R.pipe(R.map(R.apply(withLower(isProto, addArities == exports.EVEN_OPTIONAL))), R.values, R.mergeAll) :
+    R.pipe(R.map(R.apply(withLower(isProto))), R.values, R.mergeAll) :
     R.identity;
 const dynamify = (isProto, addArities, fn) => addArities == exports.DYNAMIC ?
     R.pipe(R.nthArg(1), R.flip(fn), (f) => (i) => f(i - (isProto ? 1 : 0))) :
     fn;
-exports.curryStatic = (cls, addArities = exports.EVEN_OPTIONAL) => R.pipe(exports.getArities(false), getUsedArities(false, addArities), R.map(R.pipe(
-// R.adjust((k: keyof Type<T>) => console.log.bind(console), 1),
-// R.adjust((k: keyof Type<T>) => cls[k], 1),
-R.adjust((k) => (...args) => cls[k](R.last(args), ...R.dropLast(1, args)), 1), R.apply(dynamify(false, addArities, R.curryN)))))(cls);
+exports.curryStatic = (cls, addArities = exports.EVEN_OPTIONAL) => R.pipe(exports.getArities(false), getUsedArities(false, addArities), R.map(R.pipe(R.tap(console.log.bind(console)), R.adjust((k) => (...args) => cls[k](R.last(args), ...R.dropLast(1, args)), 1), R.apply(dynamify(false, addArities, R.curryN)))))(cls);
 exports.curryPrototype = (cls, addArities = exports.EVEN_OPTIONAL) => R.pipe(exports.getArities(true), getUsedArities(true, addArities), R.map(R.apply(dynamify(true, addArities, R.invoker))))(cls.prototype);
 // return curried functions -- subject last for prototype methods (all arities)
 exports.curryClass = (cls, addArities = exports.EVEN_OPTIONAL) => R.merge(exports.curryPrototype(cls, addArities), exports.curryStatic(cls, addArities));
